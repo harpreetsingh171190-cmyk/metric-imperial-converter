@@ -70,22 +70,30 @@ module.exports = function (app) {
       });
     });
 
-  app.get('/_api/get-tests', function(req, res) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  // CORS preflight ਲਈ OPTIONS ਰੂਟ
+  app.options('/_api/get-tests', cors());
+
+  app.get('/_api/get-tests', cors(), function(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
 
     const type = req.query.type;
-    if (type === 'unit') {
-      return res.json(unitTestsResponse);
-    } else if (type === 'functional') {
+    
+    if (type === 'functional') {
       return res.json(functionalTestsResponse);
     }
-    // ਜੇ ਬਿਨਾਂ type ਤੋਂ ਮੰਗੇ, ਤਾਂ ਸਾਰੇ 21 ਟੈਸਟ ਵਾਪਸ ਭੇਜੋ
+    
+    // type === 'unit' ਜਾਂ ਕੋਈ ਵੀ ਹੋਰ ਕਾਲ ਹੋਵੇ ਤਾਂ ਯੂਨਿਟ ਟੈਸਟ ਦਿਓ ਤਾਂ ਜੋ data.length ਕਦੇ undefined ਨਾ ਹੋਵੇ
+    if (type === 'unit') {
+      return res.json(unitTestsResponse);
+    }
+
     return res.json([...unitTestsResponse, ...functionalTestsResponse]);
   });
 
-  app.get('/_api/app-info', function(req, res) {
-    res.header("Access-Control-Allow-Origin", "*");
+  app.get('/_api/app-info', cors(), function(req, res) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
     let hs = Object.keys(res._headers || {})
       .filter(h => !h.match(/^access-control-\w+/));
     let hObj = {};
