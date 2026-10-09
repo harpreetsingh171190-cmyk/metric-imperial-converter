@@ -33,8 +33,10 @@ const runner = require('../test-runner');
 
 module.exports = function (app) {
 
+  app.use(cors({ origin: '*' }));
+
   app.route('/_api/server.js')
-    .get(cors(), function(req, res, next) {
+    .get(function(req, res, next) {
       fs.readFile(__dirname + '/../server.js', function(err, data) {
         if(err) return next(err);
         res.send(data.toString());
@@ -42,7 +44,7 @@ module.exports = function (app) {
     });
 
   app.route('/_api/routes/api.js')
-    .get(cors(), function(req, res, next) {
+    .get(function(req, res, next) {
       fs.readFile(__dirname + '/../routes/api.js', function(err, data) {
         if(err) return next(err);
         res.type('txt').send(data.toString());
@@ -50,23 +52,27 @@ module.exports = function (app) {
     });
 
   app.route('/_api/controllers/convertHandler.js')
-    .get(cors(), function(req, res, next) {
+    .get(function(req, res, next) {
       fs.readFile(__dirname + '/../controllers/convertHandler.js', function(err, data) {
         if(err) return next(err);
         res.type('txt').send(data.toString());
       });
     });
 
-  app.get('/_api/get-tests', cors(), function(req, res, next) {
-    if (runner.report) {
-      return res.json(testFilter(runner.report, req.query.type, req.query.n));
+  app.get('/_api/get-tests', function(req, res) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+
+    if (!runner.report) {
+      runner.on('done', function(report) {
+        return res.json(testFilter(report, req.query.type, req.query.n));
+      });
+      return;
     }
-    runner.on('done', function(report) {
-      res.json(testFilter(report, req.query.type, req.query.n));
-    });
+    res.json(testFilter(runner.report, req.query.type, req.query.n));
   });
 
-  app.get('/_api/app-info', cors(), function(req, res) {
+  app.get('/_api/app-info', function(req, res) {
     let hs = Object.keys(res._headers || {});
     let hObj = {};
     hs.forEach(h => { hObj[h] = res._headers[h]; });
