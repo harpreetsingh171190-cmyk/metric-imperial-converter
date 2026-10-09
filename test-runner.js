@@ -1,42 +1,43 @@
-'use strict';
+const Mocha = require('mocha');
+const fs = require('fs');
+const path = require('path');
 
-const Mocha = require('mocha'),
-    fs = require('fs'),
-    path = require('path');
+let mocha = new Mocha();
+let testDir = './tests';
 
-const mocha = new Mocha();
-const testDir = './tests';
-
-// Add each file to the mocha instance
 fs.readdirSync(testDir).filter(function(file){
-    // Only keep the .js files
     return file.substr(-3) === '.js';
-
 }).forEach(function(file){
     mocha.addFile(
         path.join(testDir, file)
     );
 });
 
-function run() {
-    // Run the tests.
-    try {
-      let runner = mocha.run(function(){
-        console.log('done running tests');
-      });
-      
-      runner.on('pass', function(test){
-        console.log('pass: %s', test.fullTitle());
-      }).on('fail', function(test, err){
-        console.log('fail: %s', test.fullTitle(), err);
-      });
+let emitter = new (require('events').EventEmitter)();
 
-    } catch (e) {
-      console.log('Tests failed to run:');
-      console.log(e);
-    }
+function run() {
+  let tests = [];
+  let context = "";
+  let separator = " -> ";
+  try {
+    let runner = mocha.ui('tdd').run()
+      .on('test end', function(test) {
+        let fullTitle = test.titlePath().join(separator);
+        tests.push({
+          title: test.title,
+          context: fullTitle.slice(0, fullTitle.lastIndexOf(separator)),
+          state: test.state
+        });
+      })
+      .on('end', function() {
+        emitter.report = tests;
+        emitter.emit('done', tests);
+      });
+  } catch(e) {
+    throw(e);
+  }
 }
 
-module.exports = {
-  run: run
-};
+emitter.run = run;
+
+module.exports = emitter;
