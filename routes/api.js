@@ -14,13 +14,13 @@ module.exports = function (app) {
       const initNum = convertHandler.getNum(input);
       const initUnit = convertHandler.getUnit(input);
       
-      if (initNum === null && initUnit === null) {
+      if (!initNum && !initUnit) {
         return res.send('invalid number and unit');
       }
-      if (initNum === null) {
+      if (!initNum) {
         return res.send('invalid number');
       }
-      if (initUnit === null) {
+      if (!initUnit) {
         return res.send('invalid unit');
       }
       
