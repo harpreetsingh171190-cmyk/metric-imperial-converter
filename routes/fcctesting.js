@@ -57,11 +57,13 @@ module.exports = function (app) {
       });
     });
 
-  app.get('/_api/get-tests', cors(), function(req, res) {
-    if (!runner.report) {
-      return res.json({ status: 'unavailable' });
+  app.get('/_api/get-tests', cors(), function(req, res, next) {
+    if (runner.report) {
+      return res.json(testFilter(runner.report, req.query.type, req.query.n));
     }
-    res.json(testFilter(runner.report, req.query.type, req.query.n));
+    runner.on('done', function(report) {
+      res.json(testFilter(report, req.query.type, req.query.n));
+    });
   });
 
   app.get('/_api/app-info', cors(), function(req, res) {
@@ -81,10 +83,10 @@ function testFilter(tests, type, n) {
 
   switch (type) {
     case 'unit':
-      out = tests.filter(t => t.context && t.context.includes('Unit Tests') && t.state === 'passed');
+      out = tests.filter(t => t.context && t.context.indexOf('Unit Tests') !== -1 && t.state === 'passed');
       break;
     case 'functional':
-      out = tests.filter(t => t.context && t.context.includes('Functional Tests') && t.state === 'passed');
+      out = tests.filter(t => t.context && t.context.indexOf('Functional Tests') !== -1 && t.state === 'passed');
       break;
     default:
       out = tests;
