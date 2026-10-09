@@ -57,13 +57,11 @@ module.exports = function (app) {
       });
     });
 
-  app.get('/_api/get-tests', cors(), function(req, res, next) {
-    if (runner.report) {
-      return res.json(testFilter(runner.report, req.query.type, req.query.n));
+  app.get('/_api/get-tests', cors(), function(req, res) {
+    if (!runner.report) {
+      return res.json({ status: 'unavailable' });
     }
-    runner.on('done', function(report) {
-      res.json(testFilter(report, req.query.type, req.query.n));
-    });
+    res.json(testFilter(runner.report, req.query.type, req.query.n));
   });
 
   app.get('/_api/app-info', cors(), function(req, res) {
@@ -78,28 +76,21 @@ module.exports = function (app) {
 };
 
 function testFilter(tests, type, n) {
-  let out;
+  let out = [];
+  if (!tests) return out;
+
   switch (type) {
     case 'unit':
-      out = [];
-      tests.forEach(t => {
-        if(t.state === 'passed') {
-          out.push({title: t.title, context: t.context, state: t.state});
-        }
-      });
+      out = tests.filter(t => t.context && t.context.includes('Unit Tests') && t.state === 'passed');
       break;
     case 'functional':
-      out = [];
-      tests.forEach(t => {
-        if(t.state === 'passed') {
-          out.push({title: t.title, context: t.context, state: t.state});
-        }
-      });
+      out = tests.filter(t => t.context && t.context.includes('Functional Tests') && t.state === 'passed');
       break;
     default:
       out = tests;
   }
-  if(n !== undefined) {
+  
+  if (n !== undefined) {
     return out[n] || out;
   }
   return out;
