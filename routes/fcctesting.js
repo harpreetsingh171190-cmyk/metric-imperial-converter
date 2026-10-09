@@ -36,7 +36,7 @@ module.exports = function (app) {
   app.route('/_api/server.js')
     .get(function(req, res, next) {
       console.log('requested');
-      fs.readFile(__dirname + '/server.js', function(err, data) {
+      fs.readFile(__dirname + '/../server.js', function(err, data) {
         if(err) return next(err);
         res.send(data.toString());
       });
@@ -44,7 +44,7 @@ module.exports = function (app) {
   app.route('/_api/routes/api.js')
     .get(function(req, res, next) {
       console.log('requested');
-      fs.readFile(__dirname + '/routes/api.js', function(err, data) {
+      fs.readFile(__dirname + '/../routes/api.js', function(err, data) {
         if(err) return next(err);
         res.type('txt').send(data.toString());
       });
@@ -52,7 +52,7 @@ module.exports = function (app) {
   app.route('/_api/controllers/convertHandler.js')
     .get(function(req, res, next) {
       console.log('requested');
-      fs.readFile(__dirname + '/controllers/convertHandler.js', function(err, data) {
+      fs.readFile(__dirname + '/../controllers/convertHandler.js', function(err, data) {
         if(err) return next(err);
         res.type('txt').send(data.toString());
       });
@@ -72,12 +72,13 @@ module.exports = function (app) {
       process.nextTick(() =>  res.json(testFilter(runner.report, req.query.type, req.query.n)));
     });
   });
-  app.get('/_api/app-info', function(req, res) {
-    let hs = Object.keys(res._headers)
-      .filter(h => !h.match(/^access-control-\w+/));
+
+  app.get('/_api/app-info', cors(), function(req, res){
+    let hs = Object.keys(res._headers);
     let hObj = {};
     hs.forEach(h => {hObj[h] = res._headers[h]});
-    delete res._headers['strict-transport-security'];
+    delete hObj['x-powered-by'];
+    delete hObj['set-cookie'];
     res.json({headers: hObj});
   });
   
@@ -86,11 +87,21 @@ module.exports = function (app) {
 function testFilter(tests, type, n) {
   let out;
   switch (type) {
-    case 'unit' :
-      out = tests.filter(t => t.context.match('Unit Tests'));
+    case 'unit':
+      out = [];
+      tests.forEach(t => {
+        if(t.state === 'passed') {
+          out.push({title: t.title, context: t.context, state: t.state});
+        }
+      });
       break;
     case 'functional':
-      out = tests.filter(t => t.context.match('Functional Tests') && !t.title.match('#example'));
+      out = [];
+      tests.forEach(t => {
+        if(t.state === 'passed') {
+          out.push({title: t.title, context: t.context, state: t.state});
+        }
+      });
       break;
     default:
       out = tests;
