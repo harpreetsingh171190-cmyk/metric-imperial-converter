@@ -37,7 +37,7 @@ function ConvertHandler() {
   this.getReturnUnit = function(initUnit) {
     let unit = initUnit.toLowerCase();
     switch (unit) {
-      case 'gal': return 'l';
+      case 'gal': return 'L';
       case 'l': return 'gal';
       case 'mi': return 'km';
       case 'km': return 'mi';
